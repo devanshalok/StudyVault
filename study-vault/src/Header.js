@@ -1,14 +1,31 @@
 // Header.js
-import React from 'react';
+import React, { useState } from 'react';
 import { FaBars, FaHome } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
-const Header = () => {
+const Header = ({ onSearch, onHomeClick, activeConversationId }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      if (searchQuery.trim() === '') {
+        toast.warn('You should enter a value.', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+      } else {
+        onSearch(searchQuery.trim());
+        setSearchQuery('');
+      }
+    }
+  };
+
   return (
     <header className="flex items-center justify-between p-4 bg-blue-600 h-16 flex-shrink-0">
       {/* Home Icon */}
       <div className="flex items-center">
-        <button className="text-white text-2xl">
-          <FaHome size={35} />
+        <button className="text-white text-2xl" onClick={onHomeClick}>
+          <FaHome />
         </button>
       </div>
 
@@ -18,13 +35,17 @@ const Header = () => {
           type="text"
           placeholder="Search..."
           className="w-full p-2 rounded-md outline-none"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={activeConversationId !== null}
         />
       </div>
 
       {/* Hamburger Icon */}
       <div className="flex items-center">
         <button className="text-white text-2xl">
-          <FaBars size={35}/>
+          <FaBars />
         </button>
       </div>
     </header>
