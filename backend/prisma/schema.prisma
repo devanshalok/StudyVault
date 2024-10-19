@@ -10,5 +10,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("postgresql://:<72170Jc!>@<localhost>:<5432>/uploads-info")
+
 }
+
+Video
+Image
+PDF
+
