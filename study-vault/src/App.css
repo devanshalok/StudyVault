@@ -36,3 +36,44 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* DropdownButton.css */
+/* Basic styles for the dropdown button */
+.dropbtn {
+  background-color: #4CAF50; /* Green background */
+  color: white; /* White text */
+  padding: 10px 16px; /* Padding for button */
+  font-size: 16px; /* Font size */
+  border: none; /* No border */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+/* Dropdown container */
+.dropdown {
+  position: relative; /* Relative positioning */
+  display: inline-block; /* Inline block for positioning */
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+  display: block; /* Make sure dropdown is displayed when isOpen is true */
+  position: absolute; /* Position absolute */
+  background-color: #f9f9f9; /* Background color */
+  min-width: 160px; /* Minimum width */
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); /* Shadow effect */
+  z-index: 1; /* Ensure it appears on top */
+}
+
+/* Links in the dropdown */
+.dropdown-content label {
+  color: black; /* Link color */
+  padding: 12px 16px; /* Padding */
+  display: block; /* Block display */
+  cursor: pointer; /* Pointer cursor for labels */
+}
+
+/* Change color on hover */
+.dropdown-content label:hover {
+  background-color: #f1f1f1; /* Light grey background on hover */
+}

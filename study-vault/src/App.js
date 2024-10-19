@@ -1,9 +1,9 @@
 // App.js
 import React, { useState } from 'react';
-import Header from './Header';
-import Sidebar from './Sidebar';
-import MainContent from './MainContent';
-import UploadButton from './UploadButton';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import MainContent from './components/MainContent';
+import UploadButton from './components/UploadButton';
 
 const App = () => {
   const [files, setFiles] = useState([]);
