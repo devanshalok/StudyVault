@@ -21,7 +21,7 @@ const App = () => {
   // Handle search submission
   const handleSearch = (query) => {
     // Generate search results (replace with actual logic if needed)
-    const results = [
+    const newResults = [
       `Result 1 for "${query}"`,
       `Result 2 for "${query}"`,
       `Result 3 for "${query}"`,
@@ -29,20 +29,35 @@ const App = () => {
       `Result 5 for "${query}"`,
     ];
 
-    // Create a new conversation with associated files
-    const newConversation = {
-      id: conversations.length + 1,
-      query,
-      results,
-      files: filesInProgress,
-    };
+    if (activeConversationId === null) {
+      // Create a new conversation with associated files
+      const newConversation = {
+        id: conversations.length + 1,
+        queries: [query],
+        results: [newResults],
+        files: filesInProgress,
+      };
 
-    // Update conversations and set the new conversation as active
-    setConversations([newConversation, ...conversations]);
-    setActiveConversationId(newConversation.id);
+      // Update conversations and set the new conversation as active
+      setConversations([newConversation, ...conversations]);
+      setActiveConversationId(newConversation.id);
 
-    // Reset files in progress
-    setFilesInProgress([]);
+      // Reset files in progress
+      setFilesInProgress([]);
+    } else {
+      // Append to the existing conversation
+      setConversations(
+        conversations.map((conv) =>
+          conv.id === activeConversationId
+            ? {
+                ...conv,
+                queries: [...conv.queries, query],
+                results: [...conv.results, newResults],
+              }
+            : conv
+        )
+      );
+    }
   };
 
   // Handle conversation selection
@@ -76,12 +91,10 @@ const App = () => {
         />
         <MainContent
           files={activeConversation ? activeConversation.files : filesInProgress}
-          searchResults={activeConversation ? activeConversation.results : []}
+          conversation={activeConversation}
         />
       </div>
-      {activeConversationId === null && (
-        <UploadButton onUpload={handleUpload} />
-      )}
+      {activeConversationId === null && <UploadButton onUpload={handleUpload} />}
       <ToastContainer />
     </div>
   );

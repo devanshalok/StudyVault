@@ -2,7 +2,7 @@
 import React from 'react';
 import { FaFilePdf, FaFileImage, FaFileVideo } from 'react-icons/fa';
 
-const MainContent = ({ files, searchResults }) => {
+const MainContent = ({ files, conversation }) => {
   const getFileIcon = (type) => {
     if (type.includes('pdf')) return <FaFilePdf className="text-red-500" />;
     if (type.includes('image')) return <FaFileImage className="text-green-500" />;
@@ -12,17 +12,23 @@ const MainContent = ({ files, searchResults }) => {
 
   return (
     <main className="flex-grow h-full overflow-y-auto p-4">
-      {/* Display bullet points if searchResults is not empty */}
-      {searchResults.length > 0 && (
+      {/* Display all search results in the conversation */}
+      {conversation && conversation.results.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xl font-bold mb-2">Search Results:</h2>
-          <ul className="list-disc list-inside">
-            {searchResults.map((result, index) => (
-              <li key={index} className="text-gray-700">
-                {result}
-              </li>
-            ))}
-          </ul>
+          {conversation.results.map((resultSet, index) => (
+            <div key={index} className="mb-4">
+              <h2 className="text-xl font-bold mb-2">
+                Search Results for "{conversation.queries[index]}":
+              </h2>
+              <ul className="list-disc list-inside">
+                {resultSet.map((result, idx) => (
+                  <li key={idx} className="text-gray-700">
+                    {result}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
 

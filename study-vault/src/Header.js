@@ -38,7 +38,6 @@ const Header = ({ onSearch, onHomeClick, activeConversationId }) => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={activeConversationId !== null}
         />
       </div>
 
