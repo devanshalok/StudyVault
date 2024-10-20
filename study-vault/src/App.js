@@ -1,10 +1,10 @@
-// App.js
 import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MainContent from './MainContent';
 import UploadButton from './UploadButton';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
+import { extractTextFromPDF, searchPDFs } from './pdfUtils';
 
 const App = () => {
   const [filesInProgress, setFilesInProgress] = useState([]);
@@ -12,37 +12,73 @@ const App = () => {
   const [activeConversationId, setActiveConversationId] = useState(null);
 
   // Handle file uploads
-  const handleUpload = (event) => {
+  const handleUpload = async (event) => {
     if (activeConversationId === null) {
-      setFilesInProgress([...filesInProgress, ...Array.from(event.target.files)]);
+      const uploadedFiles = Array.from(event.target.files);
+
+      // Extract text from PDFs and add to the file object
+      const filesWithText = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          let extractedText = null;
+          if (file.type === 'application/pdf') {
+            extractedText = await extractTextFromPDF(file);
+          }
+          // Create an object URL for the file
+          const preview = URL.createObjectURL(file);
+
+          // Create a new object with necessary properties
+          return {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified,
+            preview: preview,
+            extractedText: extractedText,
+          };
+        })
+      );
+
+      setFilesInProgress([...filesInProgress, ...filesWithText]);
     }
   };
 
+
+
   // Handle search submission
-  const handleSearch = (query) => {
-    // Generate search results (replace with actual logic if needed)
-    const newResults = [
-      `Result 1 for "${query}"`,
-      `Result 2 for "${query}"`,
-      `Result 3 for "${query}"`,
-      `Result 4 for "${query}"`,
-      `Result 5 for "${query}"`,
-    ];
+  const handleSearch = async (query) => {
+    if (query.trim() === '') {
+      // Display a toast notification if the query is empty
+      toast.warn('You should enter a value.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    // Search through PDFs in the active conversation or files in progress
+    let filesToSearch = [];
+    if (activeConversationId === null) {
+      filesToSearch = filesInProgress;
+    } else {
+      const activeConv = conversations.find(
+        (conv) => conv.id === activeConversationId
+      );
+      filesToSearch = activeConv.files;
+    }
+
+    // Perform the search
+    const searchResults = await searchPDFs(filesToSearch, query);
 
     if (activeConversationId === null) {
-      // Create a new conversation with associated files
+      // Create a new conversation
       const newConversation = {
         id: conversations.length + 1,
         queries: [query],
-        results: [newResults],
+        results: [searchResults],
         files: filesInProgress,
       };
-
-      // Update conversations and set the new conversation as active
       setConversations([newConversation, ...conversations]);
       setActiveConversationId(newConversation.id);
-
-      // Reset files in progress
       setFilesInProgress([]);
     } else {
       // Append to the existing conversation
@@ -52,7 +88,7 @@ const App = () => {
             ? {
                 ...conv,
                 queries: [...conv.queries, query],
-                results: [...conv.results, newResults],
+                results: [...conv.results, searchResults],
               }
             : conv
         )

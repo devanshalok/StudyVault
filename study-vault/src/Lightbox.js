@@ -1,12 +1,25 @@
 // Lightbox.js
-import React from 'react';
+
+import React, { useEffect } from 'react';
 
 const Lightbox = ({ file, onClose }) => {
   const fileType = file.type;
-  const fileURL = URL.createObjectURL(file);
+  const fileURL = file.preview;
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   const renderContent = () => {
-    if (fileType.startsWith('image/')) {
+    if (fileType && fileType.startsWith('image/')) {
       // Image
       return (
         <img
@@ -18,13 +31,11 @@ const Lightbox = ({ file, onClose }) => {
     } else if (fileType === 'application/pdf') {
       // PDF
       return (
-        <iframe
-          src={fileURL}
-          title={file.name}
-          className="h-screen w-screen"
-        />
+        <div className="flex items-center justify-center h-full">
+          <p className="text-white text-xl">Cannot display PDF preview.</p>
+        </div>
       );
-    } else if (fileType.startsWith('video/')) {
+    } else if (fileType && fileType.startsWith('video/')) {
       // Video
       return (
         <video controls className="max-w-full max-h-full">
@@ -48,7 +59,7 @@ const Lightbox = ({ file, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="relative max-w-full max-h-full p-4"
+        className="relative p-4 max-w-full max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -59,7 +70,7 @@ const Lightbox = ({ file, onClose }) => {
           &times;
         </button>
         {/* Render the content */}
-        <div className="max-w-screen max-h-screen overflow-auto">
+        <div className="flex items-center justify-center max-w-screen max-h-screen overflow-hidden">
           {renderContent()}
         </div>
       </div>

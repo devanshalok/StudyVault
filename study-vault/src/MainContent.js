@@ -1,15 +1,36 @@
 // MainContent.js
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Lightbox from './Lightbox';
 
 const MainContent = ({ files, conversation }) => {
   const [lightboxFile, setLightboxFile] = useState(null);
 
+  // Revoke object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      files.forEach((file) => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+    };
+  }, [files]);
+
+  // Prevent background scrolling when lightbox is open
+  useEffect(() => {
+    if (lightboxFile) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [lightboxFile]);
+
   const renderFile = (file) => {
     const fileType = file.type;
-    const fileURL = URL.createObjectURL(file);
+    const fileURL = file.preview;
 
-    if (fileType.startsWith('image/')) {
+    if (fileType && fileType.startsWith('image/')) {
       // Image
       return (
         <>
@@ -26,24 +47,23 @@ const MainContent = ({ files, conversation }) => {
           <p className="mt-2 text-center font-semibold">{file.name}</p>
         </>
       );
-    } else if (fileType === 'pdf') {
+    } else if (fileType === 'application/pdf') {
       // PDF
       return (
         <>
           <div
             className="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100 cursor-pointer"
-            onClick={() => setLightboxFile(file)}
+            onClick={() => {
+              // Open PDF in new tab
+              window.open(file.preview, '_blank');
+            }}
           >
-            <embed
-              src={fileURL}
-              type="application/pdf"
-              className="w-full h-full"
-            />
+            <p className="text-gray-700">PDF File</p>
           </div>
           <p className="mt-2 text-center font-semibold">{file.name}</p>
         </>
       );
-    } else if (fileType.startsWith('video/')) {
+    } else if (fileType && fileType.startsWith('video/')) {
       // Video
       return (
         <>
@@ -103,13 +123,27 @@ const MainContent = ({ files, conversation }) => {
               <h2 className="text-xl font-bold mb-2">
                 Search Results for "{conversation.queries[index]}":
               </h2>
-              <ul className="list-disc list-inside">
-                {resultSet.map((result, idx) => (
-                  <li key={idx} className="text-gray-700">
-                    {result}
-                  </li>
-                ))}
-              </ul>
+              {resultSet.length === 0 ? (
+                <p className="text-gray-600">No matches found.</p>
+              ) : (
+                <ul className="list-disc list-inside space-y-2">
+                  {resultSet.map((result, idx) => (
+                    <li key={idx} className="text-gray-700">
+                      <strong>{result.fileName}:</strong>
+                      <ul className="list-decimal list-inside ml-6 space-y-1">
+                        {result.matches.map((match, matchIdx) => (
+                          <li key={matchIdx} className="text-gray-600">
+                            <span className="font-semibold">
+                              Line {match.lineNumber}:
+                            </span>{' '}
+                            {match.text}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
