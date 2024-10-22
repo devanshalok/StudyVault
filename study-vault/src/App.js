@@ -4,7 +4,8 @@ import Sidebar from './Sidebar';
 import MainContent from './MainContent';
 import UploadButton from './UploadButton';
 import { ToastContainer, toast } from 'react-toastify';
-import { extractTextFromPDF, searchPDFs } from './pdfUtils';
+import { extractTextFromImage } from './imageUtils';
+import axios from 'axios';
 
 const App = () => {
   const [filesInProgress, setFilesInProgress] = useState([]);
@@ -12,89 +13,137 @@ const App = () => {
   const [activeConversationId, setActiveConversationId] = useState(null);
 
   // Handle file uploads
-  const handleUpload = async (event) => {
-    if (activeConversationId === null) {
-      const uploadedFiles = Array.from(event.target.files);
+const handleUpload = async (event) => {
+  if (activeConversationId === null) {
+    const uploadedFiles = Array.from(event.target.files);
 
-      // Extract text from PDFs and add to the file object
-      const filesWithText = await Promise.all(
-        uploadedFiles.map(async (file) => {
-          let extractedText = null;
-          if (file.type === 'application/pdf') {
-            extractedText = await extractTextFromPDF(file);
-          }
-          // Create an object URL for the file
-          const preview = URL.createObjectURL(file);
+    const filesWithData = await Promise.all(
+      uploadedFiles.map(async (file) => {
+        let extractedData = null;
+        let preview = URL.createObjectURL(file);
 
-          // Create a new object with necessary properties
-          return {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            lastModified: file.lastModified,
-            preview: preview,
-            extractedText: extractedText,
-          };
-        })
-      );
+        if (file.type.startsWith('image/')) {
+          // Process images
+          const text = await extractTextFromImage(file);
+          console.log(text);
+          extractedData = { text };
+        } else if (file.type.startsWith('video/')) {
+          // Upload video to server and get transcription
+          const formData = new FormData();
+          formData.append('video', file);
 
-      setFilesInProgress([...filesInProgress, ...filesWithText]);
-    }
-  };
-
-
-
-  // Handle search submission
-  const handleSearch = async (query) => {
-    if (query.trim() === '') {
-      // Display a toast notification if the query is empty
-      toast.warn('You should enter a value.', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-      return;
-    }
-
-    // Search through PDFs in the active conversation or files in progress
-    let filesToSearch = [];
-    if (activeConversationId === null) {
-      filesToSearch = filesInProgress;
-    } else {
-      const activeConv = conversations.find(
-        (conv) => conv.id === activeConversationId
-      );
-      filesToSearch = activeConv.files;
-    }
-
-    // Perform the search
-    const searchResults = await searchPDFs(filesToSearch, query);
-
-    if (activeConversationId === null) {
-      // Create a new conversation
-      const newConversation = {
-        id: conversations.length + 1,
-        queries: [query],
-        results: [searchResults],
-        files: filesInProgress,
-      };
-      setConversations([newConversation, ...conversations]);
-      setActiveConversationId(newConversation.id);
-      setFilesInProgress([]);
-    } else {
-      // Append to the existing conversation
-      setConversations(
-        conversations.map((conv) =>
-          conv.id === activeConversationId
-            ? {
-                ...conv,
-                queries: [...conv.queries, query],
-                results: [...conv.results, searchResults],
+          try {
+            const response = await axios.post(
+              'http://localhost:4000/upload-video',
+              formData,
+              {
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
               }
-            : conv
-        )
+            );
+            extractedData = response.data;
+          } catch (error) {
+            console.error('Error processing video:', error);
+          }
+        }
+
+        return {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified,
+          preview: preview,
+          extractedData: extractedData,
+        };
+      })
+    );
+
+    setFilesInProgress([...filesInProgress, ...filesWithData]);
+  }
+};
+
+const handleSearch = async (query) => {
+  if (query.trim() === '') {
+    toast.warn('You should enter a value.', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+    return;
+  }
+
+  // Search through files in progress or active conversation
+  let filesToSearch = [];
+  if (activeConversationId === null) {
+    filesToSearch = filesInProgress;
+  } else {
+    const activeConv = conversations.find(
+      (conv) => conv.id === activeConversationId
+    );
+    filesToSearch = activeConv.files;
+  }
+
+  const searchResults = [];
+
+  for (const file of filesToSearch) {
+    if (file.type.startsWith('image/') && file.extractedData?.text) {
+      // Search in image text
+      const sentences = file.extractedData.text.split('\n');
+      const matchedSentences = sentences.filter((sentence) =>
+        sentence.toLowerCase().includes(query.toLowerCase())
       );
+      if (matchedSentences.length > 0) {
+        searchResults.push({
+          fileName: file.name,
+          type: 'image',
+          matches: matchedSentences,
+        });
+      }
+    } else if (
+      file.type.startsWith('video/') &&
+      file.extractedData?.transcription
+    ) {
+      // Search in video transcription
+      const words = file.extractedData.words;
+      const matchedWords = words.filter((wordInfo) =>
+        wordInfo.word.toLowerCase().includes(query.toLowerCase())
+      );
+      if (matchedWords.length > 0) {
+        searchResults.push({
+          fileName: file.name,
+          type: 'video',
+          matches: matchedWords,
+        });
+      }
     }
-  };
+  }
+
+  if (activeConversationId === null) {
+    // Create a new conversation
+    const newConversation = {
+      id: conversations.length + 1,
+      queries: [query],
+      results: [searchResults],
+      files: filesInProgress,
+    };
+    setConversations([newConversation, ...conversations]);
+    setActiveConversationId(newConversation.id);
+    setFilesInProgress([]);
+  } else {
+    // Append to the existing conversation
+    setConversations(
+      conversations.map((conv) =>
+        conv.id === activeConversationId
+          ? {
+              ...conv,
+              queries: [...conv.queries, query],
+              results: [...conv.results, searchResults],
+            }
+          : conv
+      )
+    );
+  }
+};
 
   // Handle conversation selection
   const handleConversationClick = (id) => {

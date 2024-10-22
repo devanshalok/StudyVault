@@ -115,7 +115,7 @@ const MainContent = ({ files, conversation }) => {
         </div>
       )}
 
-      {/* Display all search results in the conversation */}
+    {/* Display all search results in the conversation */}
       {conversation && conversation.results.length > 0 && (
         <div className="mt-8">
           {conversation.results.map((resultSet, index) => (
@@ -129,17 +129,31 @@ const MainContent = ({ files, conversation }) => {
                 <ul className="list-disc list-inside space-y-2">
                   {resultSet.map((result, idx) => (
                     <li key={idx} className="text-gray-700">
-                      <strong>{result.fileName}:</strong>
-                      <ul className="list-decimal list-inside ml-6 space-y-1">
-                        {result.matches.map((match, matchIdx) => (
-                          <li key={matchIdx} className="text-gray-600">
-                            <span className="font-semibold">
-                              Line {match.lineNumber}:
-                            </span>{' '}
-                            {match.text}
-                          </li>
-                        ))}
-                      </ul>
+                      <strong>{result.fileName} ({result.type}):</strong>
+                      {result.type === 'image' && (
+                        <ul className="list-disc list-inside ml-6 space-y-1">
+                          {result.matches.map((sentence, sentenceIdx) => (
+                            <li key={sentenceIdx} className="text-gray-600">
+                              {sentence}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {result.type === 'video' && (
+                        <ul className="list-disc list-inside ml-6 space-y-1">
+                          {result.matches.map((wordInfo, wordIdx) => (
+                            <li key={wordIdx} className="text-gray-600">
+                              <span className="font-semibold">
+                                Timestamp {wordInfo.startTime.seconds +
+                                  '.' +
+                                  wordInfo.startTime.nanos / 1e9}{' '}
+                                s:
+                              </span>{' '}
+                              {wordInfo.word}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   ))}
                 </ul>
