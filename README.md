@@ -72,6 +72,8 @@ Contributions are welcome! Please read `CONTRIBUTING.md` for our code of conduct
 ## Authors
 
 - **Devansh Alok** - Initial work - [devanshalok](https://github.com/devanshalok)
+- **Joshua Sun** - Initial work - [joshuasun](https://github.com/joshuasun)
+- **Ramsha Tasneem** - Initial work - [ramshatasneem](https://github.com/ramshatasneem)
 
 ## License
 
